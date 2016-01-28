@@ -9,7 +9,7 @@ import subprocess
 import time
 import platform
 import os
-
+import re
 
 # define some global variables
 listen             = False
@@ -170,21 +170,31 @@ def client_sender(buffer):
         
 
 def usage():
-        print u"Netools 内网工具箱"
+        print u"Netools 内网工具箱   CTRL-C 退出！"
         print "Usage: netools.py -t target_host -p port"
-        print "-l --listen                - 服务器端监听模式 Examples:netools -l 或者 netools --listen"
-        print "-t --target                - 客户端模式 设置服务器端ip地址"
-        print "-c --command               - 返回shell"
-        print "-s --scan                  - 扫描当前网段存活主机 netools -s 192.168.1.1"
+        print u"-l --listen                - 服务器端监听模式 Examples:netools -l 或者 netools --listen"
+        print u"-t --target                - 客户端模式 设置服务器端ip地址"
+        print u"-c --command               - 返回shell"
+        print u"-s --scan                  - 扫描当前网段存活主机 netools -s 192.168.1.1"
         print
-        print "例子: "
-        print "服务器端："
-        print "netools.py  -l -c"
-        print "客户端："
+        print u"例子: "
+        print u"服务器端："
+        print u"netools.py  -l -c"
+        print u"客户端："
         print "netools.py -t 192.168.0.1 -p 5555 -c"
 
         sys.exit(0)
 
+#get mac addr
+def get_mac(ip_address):
+    
+    cmd = ["arp", "-a", ip_address]
+    output = os.popen(" ".join(cmd)).readlines()
+    m = re.search('[0-9a-z]{2}-[0-9a-z]{2}-[0-9a-z]{2}-[0-9a-z]{2}-[0-9a-z]{2}-[0-9a-z]{2}',str(output))
+    if m:
+        return m.group(0)
+    else:
+        return u"没有找到"
 
 def get_os():
     u'''
@@ -209,7 +219,9 @@ def ping_ip(ip_str):
             flag = True
             break
     if flag:
+        get_mac(ip_str)
         print u"[*]ip: %s 可以ping通"%ip_str
+        print u"物理地址： {mac}".format(mac=get_mac(ip_str))
 
 def find_ip(ip_prefix):
     u'''
@@ -259,7 +271,6 @@ def main():
                 elif o in ("-p", "--port"):
                         port = int(a)
                 elif o in ("-s","--scan"):
-                        print a
                         find_ip(a)
                 else:
                         assert False,"Unhandled Option"
@@ -280,4 +291,13 @@ def main():
         if listen:
                 server_loop()
 
-main()       
+
+
+if __name__ == '__main__':
+    try:
+        main()
+    except Exception,e:
+        print u'退出程序！' 
+    except KeyboardInterrupt:      
+        print u'退出netools！'
+        sys.exit(0)
